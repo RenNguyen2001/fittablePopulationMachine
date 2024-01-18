@@ -611,6 +611,7 @@ void changeProgPodDisplay(char sampleNo){
 void stateMachine(){
   enum states{
   idle,               //starting state
+  readSamples,
   changeProgPod,
   programSample,
   changeLoadBoard,
@@ -622,10 +623,10 @@ void stateMachine(){
   };
 
   enum stepperSleep{SLEEP, WAKE};
-  
   enum stepperDir{CONVERGE, DIVERGE};
-
   char angleIncrement = 5;
+  int serialData;
+  char readSampleNum = 0;
 
   switch(stateObj.currentState)
   {
@@ -633,12 +634,44 @@ void stateMachine(){
     //display menu options on LCD
       stateObj.sampleNo = 0;
       mainMenuDisplay();
+      Serial.println('s');  //send a message to the python script to indicate that the automation program has started
+      stateObj.currentState = readSamples;
+      //stateObj.currentState = changeProgPod;
+    break;
+
+    case readSamples: //for the python script to read the names of the samples (to input into custom sound)
+      //just need to rotate the samples and wait for the python script to run
       
-      stateObj.currentState++;
-      
-      //as soon as machine turns on, align the first sample
-      //if user presses start move to next state
-      //state = state + 1;
+      int readSampleAng;
+
+      while(readSampleNum <= 4)
+      {
+        switch(readSampleNum)
+        {
+          case 0: readSampleAng = -80; break;
+          case 1: readSampleAng = -40; break;
+          case 2: readSampleAng = 0; break;
+          case 3: readSampleAng = 40; break;
+          case 4: readSampleAng = 85; break;
+        }
+
+        servoCtrl(implantServoPin, readSampleAng);  servoCtrl(spServoPin, readSampleAng);
+
+        
+        if(Serial.available() > 0)  //serial message has been detected
+        {
+          serialData = Serial.read();
+          if(serialData == '1') //python will send this once it finishes checking the sample data
+          {
+            Serial.println('e'); //tell python that the machine has rotated to the next sample
+            readSampleNum++;
+          }
+        }
+        
+      }
+
+      stateObj.currentState=idle;
+      //stateObj.currentState++;
     break;
 
     case changeProgPod: 
@@ -655,8 +688,20 @@ void stateMachine(){
       //turn on the implant relays for the relevant samples
       //use the python automation script
         //await for the script to send a message via serial and then move to the next state
-      //stateObj.currentState++;
-      stateObj.currentState = detectContactPoint;
+        /*
+        while(true)
+        {
+          if(Serial.available() > 0)  //serial message has been detected
+          {
+            if(Serial.read() == '1')
+            {
+              Serial.print('e');  //tell python that the request was successfully received
+              stateObj.currentState++;
+            }
+          }
+        }
+        */
+      stateObj.currentState = detectContactPoint; //this is placed here just for testing/demonstration
     break;
     
 
@@ -754,7 +799,7 @@ void stateMachine(){
         case 4: targetAng = 85; break;
       }
 
-      implantServoParams.targetAng =targetAng;
+      implantServoParams.targetAng = targetAng;
       spServoParams.targetAng = targetAng;
 
       //use interrupts to track the current angle for each
