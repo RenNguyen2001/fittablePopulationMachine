@@ -1,0 +1,3 @@
+COM port:               COM5
+App F/W Running:        True
+WhoIsThere:             ('1.0.0', '1270A03F00', '1-01-020-1002959')

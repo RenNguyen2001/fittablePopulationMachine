@@ -635,8 +635,8 @@ void stateMachine(){
       stateObj.sampleNo = 0;
       mainMenuDisplay();
       Serial.println('s');  //send a message to the python script to indicate that the automation program has started
-      stateObj.currentState = readSamples;
-      //stateObj.currentState = changeProgPod;
+      //stateObj.currentState = readSamples;
+      stateObj.currentState = changeProgPod;
     break;
 
     case readSamples: //for the python script to read the names of the samples (to input into custom sound)
